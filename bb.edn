@@ -1,0 +1,14 @@
+{:paths ["src"]
+ :deps {current/deps {:local/root "."}}
+ :tasks
+ {watch:test {:task (shell "watchexec -w src bb test")}
+  test {:doc "Run tests with eftest runner"
+        :extra-deps {eftest/eftest {:mvn/version "0.6.0"}}
+        :extra-paths ["test"]
+        :requires ([eftest.runner :refer [find-tests run-tests]])
+        :task (let [{:keys [fail error]} (run-tests (find-tests "src") {:report eftest.report.pretty/report})]
+                (when (or (pos? fail)
+                          (pos? error))
+                  (throw (ex-info "Tests failed" {:babashka/exit 1}))))}
+  fmt {:doc "Format code using cljfmt"
+       :task (shell "cljfmt fix")}}}

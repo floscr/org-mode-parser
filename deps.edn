@@ -1,0 +1,11 @@
+{:paths ["src"]
+ :deps {strojure/parsesso {:git/url "https://github.com/strojure/parsesso"
+                           :sha "28d28cb9b84cdbd990d0f6e0f4cd34ab1aacbc5f"}
+        funcool/cuerdas {:mvn/version "2023.11.09-407"}}
+ :aliases {:nrepl {:extra-paths ["test"]
+                   :extra-deps {nrepl/nrepl {:mvn/version "1.3.1"}}
+                   :jvm-opts ["-Djdk.attach.allowAttachSelf"]
+                   :main-opts ["-m" "nrepl.cmdline" "--port" "7888"]}
+           :test {:extra-paths ["test"]
+                  :extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1"
+                                                                     :git/sha "dfb30dd"}}}}}

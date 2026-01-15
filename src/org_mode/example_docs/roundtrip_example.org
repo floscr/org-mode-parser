@@ -1,0 +1,47 @@
+#+TITLE: Example Roundtrip
+#+AUTHOR: Org Bot
+#+DATE: <2024-02-29 Thu>
+
+# A comment line that should roundtrip unchanged.
+Intro paragraph with *bold*, /italic/, =code=, and a [[link][titled link]].
+There is also an inactive timestamp [2024-02-29 Thu] and a footnote[fn:1].
+
+:PROPERTIES:
+:CATEGORY: Examples
+:END:
+
+* Heading One
+Body under heading one.
+- [ ] Checkbox item
+- [X] Completed checkpoint
+- Plain bullet
+
+SCHEDULED: <2024-02-29 Thu>
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-01-01 Mon]
+:END:
+
+1. Ordered item one
+2. Ordered item two
+
+** Subheading A
+Child paragraph line referencing <<target>>a target.
+There is also a stats cookie [2/5] and percent cookie [33%].
+
+| Col A | Col B |
+|-------+-------|
+|  foo  |  bar  |
+|  baz  |  qux  |
+
+#+BEGIN_SRC clj
+(+ 1 2)
+#+END_SRC
+
+* TODO Heading Two
+Final section content with a horizontal rule below.
+-----
+Planning:
+DEADLINE: <2024-03-15 Fri>
+
+Footnotes:
+[fn:1] Footnote definition that should survive roundtrip.
