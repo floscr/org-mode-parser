@@ -4,7 +4,7 @@
    [org-mode.chunker.core :as chunker]))
 
 (deftest chunk-headings-splits-headlines
-  (testing "splits document text on real headline boundaries"
+  (testing "splits document text on real headline boundaries, preserving blank lines"
     (let [doc (str
                "Prelude line\n"
                "\n"
@@ -14,8 +14,9 @@
                "** Child\n"
                "Child body line\n")
           chunks (chunker/chunk-headings doc)]
-      (is (= ["Prelude line\n"
-              "* Heading One\nBody under heading.\n"
+      ;; Blank lines before headings are preserved in the preceding chunk
+      (is (= ["Prelude line\n\n"
+              "* Heading One\nBody under heading.\n\n"
               "** Child\nChild body line\n"]
              chunks)))))
 

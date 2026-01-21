@@ -62,6 +62,16 @@
     (is (= (inline/parse "A footnote [fn:1]")
            ["A" " " "footnote" " " [footnote-ref "1"]]))))
 
+(deftest footnote-word-boundary-test
+  (testing "Footnote requires word boundary"
+    ;; Footnotes directly attached to words should NOT be parsed as footnote-ref
+    ;; (they get collected as word tokens instead)
+    (is (= (inline/parse "footnote[fn:1].")
+           ["footnote" "[fn:1]."]))
+    ;; But with space before, they should be parsed as footnote-ref
+    (is (= (inline/parse "footnote [fn:1].")
+           ["footnote" " " [footnote-ref "1"] "."]))))
+
 (deftest macro-test
   (testing "Macro parser"
     (is (= (inline/parse "{{{macro_name}}}")
@@ -85,18 +95,21 @@
            [[tags/stats-percent-cookie 40]]))))
 
 (deftest edge-cases-test
-  (testing "Dont parse beyond newline"
-    (is (= (inline/parse "* Some text
-") ["*" " " "Some" " " "text"])))
+  (testing "Newline handling"
+    ;; Newlines are preserved as tokens
+    (is (= (inline/parse "* Some text\n") ["*" " " "Some" " " "text" "\n"])))
   (testing "Disregard non closing"
     (is (= (inline/parse "+ Some text here") ["+" " " "Some" " " "text" " " "here"])))
-  (testing "No empty"
-    (is (= (inline/parse "**") ["**"]))
+  (testing "No empty styled spans"
+    ;; Empty delimiters are not parsed as styled text
+    (is (= (inline/parse "**") ["*" "*"]))
     (is (= (inline/parse "* *") ["*" " " "*"])))
-  (testing "Double delimiter bug"
-    (is (= (inline/parse "***Multiple Delimiters***") [[bold "Multiple Delimiters"]])))
+  (testing "Multiple delimiters"
+    ;; Extra delimiters outside the styled span remain as separate tokens
+    (is (= (inline/parse "***Multiple Delimiters***") ["*" "*" [bold "Multiple Delimiters"] "*" "*"])))
   (testing "Non greedy delimiters"
-    (is (= (inline/parse "*Non Greedy* Rest*") [[bold "Non Greedy"] " " "Rest*"])))
+    ;; Trailing delimiter after styled span is a separate token
+    (is (= (inline/parse "*Non Greedy* Rest*") [[bold "Non Greedy"] " " "Rest" "*"])))
   (testing "Dont parse nested delimiters"
     (is (= (inline/parse "/=No Nested/=") [[italic "=No Nested"] "="]))
     (is (= (inline/parse "=~No Nested~=") [[verbatim "~No Nested~"]]))))

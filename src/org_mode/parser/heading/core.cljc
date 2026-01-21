@@ -1,5 +1,6 @@
-
 (ns org-mode.parser.heading.core
+  "Document parser for org-mode files.
+   Splits documents by headings and parses each section."
   (:require
    [org-mode.chunker.core :as chunker]
    [org-mode.parser.blocks.core :as blocks]
@@ -7,10 +8,9 @@
 
 (defn- heading-line-info
   "Returns {:level n :title-str \"...\"} when the line is a valid heading."
-  [line]
+  [^String line]
   (when line
-    (let [^String line line
-          len (.length line)]
+    (let [len (.length line)]
       (loop [idx 0]
         (when (< idx len)
           (let [ch (.charAt line idx)]
@@ -32,28 +32,37 @@
     {:level level
      :title (inline/parse (or title-str ""))}))
 
+(defn- ends-with-blank-line?
+  "Check if string ends with a blank line (two or more newlines at end)."
+  [^String s]
+  (let [len (.length s)]
+    (and (>= len 2)
+         (= (.charAt s (dec len)) \newline)
+         (= (.charAt s (- len 2)) \newline))))
+
 (defn- chunk->heading
-  "Takes a chunk returned by chunker/chunk-headings and turns it into a heading map."
-  [chunk]
-  (let [nl-idx (.indexOf ^String chunk "\n")
+  "Takes a chunk and turns it into a heading map."
+  [^String chunk]
+  (let [nl-idx (.indexOf chunk "\n")
         [headline-line body-str]
         (if (neg? nl-idx)
           [chunk ""]
           [(subs chunk 0 nl-idx) (subs chunk (inc nl-idx))])
         {:keys [level title]} (parse-heading-line headline-line)
-        body (blocks/parse body-str)]
+        body (blocks/parse body-str)
+        ;; Track if there's a blank line after this section (before next heading)
+        trailing-blank? (ends-with-blank-line? chunk)]
     {:level level
      :title title
-     :body body}))
-
-(defn- parse-header-chunks
-  [header-chunks parallel?]
-  #?(:clj (if (and parallel? (> (count header-chunks) 1))
-            (into [] (pmap chunk->heading header-chunks))
-            (mapv chunk->heading header-chunks))
-     :cljs (mapv chunk->heading header-chunks)))
+     :body body
+     :trailing-blank? trailing-blank?}))
 
 (defn parse-document
+  "Parse a full org-mode document into {:body ... :headers [...]}.
+
+   The body contains any content before the first heading.
+   Headers is a flat vector of heading maps, each with :level, :title, and :body.
+   Both body and headers track :trailing-blank? to preserve blank lines."
   [s & {:keys [parallel?]}]
   (let [chunks (let [c (chunker/chunk-headings (or s ""))]
                  (if (seq c) c [""]))
@@ -64,6 +73,12 @@
           ["" chunks]
           [(or first-chunk "") (rest chunks)])
         body (blocks/parse body-chunk)
-        headers (parse-header-chunks header-chunks parallel?)]
+        ;; Track if body ends with blank line (before first heading)
+        body-trailing-blank? (ends-with-blank-line? (str body-chunk))
+        headers #?(:clj (if (and parallel? (> (count header-chunks) 1))
+                          (into [] (pmap chunk->heading header-chunks))
+                          (mapv chunk->heading header-chunks))
+                   :cljs (mapv chunk->heading header-chunks))]
     {:body body
+     :body-trailing-blank? body-trailing-blank?
      :headers headers}))

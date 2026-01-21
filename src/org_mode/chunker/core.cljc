@@ -18,7 +18,10 @@
   "Chunks headings by scanning for newlines whose following line starts with a
   heading marker. This avoids large-regex overhead on big documents while still
   ensuring only `*` lines followed by a space/tab count as headings. Nil input
-  is treated as an empty string."
+  is treated as an empty string.
+
+  Preserves blank lines before headings by including the trailing newline in
+  the chunk when a blank line precedes the heading."
   [s]
   (let [^String s (or s "")
         len (.length s)]
@@ -33,7 +36,12 @@
         (let [ch (.charAt s idx)]
           (if (and (= ch \newline)
                    (heading-start? s (inc idx) len))
-            (recur (inc idx)
-                   (inc idx)
-                   (conj acc (subs s start idx)))
+            ;; Check if there's a blank line (newline before this one)
+            (let [has-blank? (and (> idx 0)
+                                  (= (.charAt s (dec idx)) \newline))
+                  ;; Include the extra newline in chunk if blank line exists
+                  chunk-end (if has-blank? (inc idx) idx)]
+              (recur (inc idx)
+                     (inc idx)
+                     (conj acc (subs s start chunk-end))))
             (recur start (inc idx) acc)))))))

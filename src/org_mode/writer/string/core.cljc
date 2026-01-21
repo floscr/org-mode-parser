@@ -29,14 +29,20 @@
 
 (defn document->string
   "Render a full document map {:body :headers} back to text.
-  Because the chunker splits on a newline before each heading, we reinsert
-  a single newline before every heading (except when the document starts
-  with a heading)."
-  [{:keys [body headers]}]
-  (let [body-str (blocks->string body)]
+  Uses :trailing-blank? and :body-trailing-blank? to preserve blank lines
+  between sections."
+  [{:keys [body body-trailing-blank? headers]}]
+  (let [body-str (blocks->string body)
+        ;; Build headers with proper blank line handling
+        indexed-headers (map-indexed vector headers)]
     (reduce
-     (fn [acc {:keys [body] :as h}]
-       (str acc "\n"
-            (make-headline-line h)
-            (blocks->string body)))
-     (or body-str "") headers)))
+     (fn [acc [idx {:keys [body trailing-blank?] :as h}]]
+       (let [;; Check if previous section had trailing blank line
+             prev-had-blank? (if (zero? idx)
+                               body-trailing-blank?
+                               (:trailing-blank? (nth headers (dec idx))))
+             separator (if prev-had-blank? "\n" "")]
+         (str acc separator
+              (make-headline-line h)
+              (blocks->string body))))
+     (or body-str "") indexed-headers)))
