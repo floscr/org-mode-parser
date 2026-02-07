@@ -20,6 +20,9 @@
   (testing "link with title"
     (is (true? (sut/link-token? [:link-with-title {:link "url" :title "title"}]))))
 
+  (testing "raw link"
+    (is (true? (sut/link-token? [:raw-link "https://example.com"]))))
+
   (testing "non-link"
     (is (false? (sut/link-token? [:bold "text"])))
     (is (false? (sut/link-token? "plain string")))))
@@ -32,7 +35,11 @@
   (testing "titled link href"
     (is (= "https://example.com"
            (sut/link-href [:link-with-title {:link "https://example.com"
-                                             :title "Example"}])))))
+                                             :title "Example"}]))))
+
+  (testing "raw link href"
+    (is (= "https://example.com"
+           (sut/link-href [:raw-link "https://example.com"])))))
 
 (deftest link-title-test
   (testing "plain link title falls back to href"
@@ -42,7 +49,11 @@
   (testing "titled link returns title"
     (is (= "Example"
            (sut/link-title [:link-with-title {:link "https://example.com"
-                                              :title "Example"}])))))
+                                              :title "Example"}]))))
+
+  (testing "raw link title falls back to URL"
+    (is (= "https://example.com"
+           (sut/link-title [:raw-link "https://example.com"])))))
 
 (deftest title-links-test
   (testing "extracts links from title"
@@ -74,4 +85,27 @@
     (let [heading (parse-heading "* Title [[https://a.com]]\n[[https://b.com]] text")]
       (is (= 2 (count (sut/heading-links heading))))
       (is (= "https://a.com" (sut/link-href (first (sut/heading-links heading)))))
-      (is (= "https://b.com" (sut/link-href (second (sut/heading-links heading))))))))
+      (is (= "https://b.com" (sut/link-href (second (sut/heading-links heading)))))))
+
+  (testing "combines bracket and raw links"
+    (let [heading (parse-heading "* See [[link][docs]] and https://raw.com\nBody https://body.com")]
+      (is (= 3 (count (sut/heading-links heading))))
+      (is (= "link" (sut/link-href (first (sut/heading-links heading)))))
+      (is (= "https://raw.com" (sut/link-href (second (sut/heading-links heading)))))
+      (is (= "https://body.com" (sut/link-href (nth (sut/heading-links heading) 2)))))))
+
+(deftest raw-link-extraction-test
+  (testing "raw links in title"
+    (let [heading (parse-heading "* Visit https://example.com today")]
+      (is (= 1 (count (sut/title-links heading))))
+      (is (= "https://example.com" (sut/link-href (first (sut/title-links heading)))))))
+
+  (testing "raw links in body"
+    (let [heading (parse-heading "* Heading\nSee https://example.com for details")]
+      (is (= 1 (count (sut/body-links heading))))
+      (is (= "https://example.com" (sut/link-href (first (sut/body-links heading)))))))
+
+  (testing "raw links in list items"
+    (let [heading (parse-heading "* Heading\n- Check https://example.com")]
+      (is (= 1 (count (sut/body-links heading))))
+      (is (= "https://example.com" (sut/link-href (first (sut/body-links heading))))))))

@@ -3,7 +3,8 @@
 
    Works with the inline link tokens produced by the parser:
      [:link \"url\"]
-     [:link-with-title {:link \"url\" :title \"text\"}]"
+     [:link-with-title {:link \"url\" :title \"text\"}]
+     [:raw-link \"https://example.com\"]"
   (:require
    [org-mode.parser.blocks.core :as blocks]
    [org-mode.parser.inline.tags :as inline-tags]))
@@ -11,11 +12,12 @@
 ;; Token predicates -----------------------------------------------------------
 
 (defn link-token?
-  "Returns true if the inline token is a link (plain or with title)."
+  "Returns true if the inline token is a link (plain, with title, or raw URL)."
   [token]
   (boolean
    (and (vector? token)
-        (#{inline-tags/link inline-tags/link-with-title} (first token)))))
+        (#{inline-tags/link inline-tags/link-with-title inline-tags/raw-link}
+         (first token)))))
 
 ;; Link accessors -------------------------------------------------------------
 
@@ -26,6 +28,7 @@
     (case tag
       :link content
       :link-with-title (:link content)
+      :raw-link content
       nil)))
 
 (defn link-title
@@ -35,6 +38,7 @@
     (case tag
       :link content
       :link-with-title (or (:title content) (:link content))
+      :raw-link content
       nil)))
 
 ;; Extraction -----------------------------------------------------------------
