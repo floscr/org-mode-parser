@@ -52,6 +52,7 @@
 
    t/link (fn [_ tok] (write-link tok))
    t/link-with-title (fn [_ tok] (write-link-with-title tok))
+   t/raw-link (fn [_ [_ url]] url)
    t/target (fn [_ [_ content]] (str d/target-start content d/target-end))
    t/footnote-ref (fn [_ [_ content]] (str d/footnote-start content d/footnote-end))
    t/footnote-def (fn [_ [_ {:keys [name definition]}]]

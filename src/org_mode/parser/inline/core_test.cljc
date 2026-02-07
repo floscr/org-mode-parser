@@ -5,8 +5,10 @@
    [org-mode.parser.inline.tags :as tags]
    [org-mode.parser.inline.tags :refer [bold code footnote-def footnote-ref
                                         inactive-timestamp italic link
-                                        link-with-title macro strike-through
-                                        target timestamp underline verbatim]]))
+                                        link-with-title macro raw-link
+                                        strike-through target timestamp
+                                        underline verbatim]]
+   [org-mode.writer.string.inline.core :as w.inline]))
 
 (deftest single-inline-test
   (testing "Single inline parsers"
@@ -113,3 +115,36 @@
   (testing "Dont parse nested delimiters"
     (is (= (inline/parse "/=No Nested/=") [[italic "=No Nested"] "="]))
     (is (= (inline/parse "=~No Nested~=") [[verbatim "~No Nested~"]]))))
+
+(deftest raw-link-test
+  (testing "https URL"
+    (is (= (inline/parse "https://example.com")
+           [[raw-link "https://example.com"]])))
+
+  (testing "http URL"
+    (is (= (inline/parse "http://example.com")
+           [[raw-link "http://example.com"]])))
+
+  (testing "URL with path"
+    (is (= (inline/parse "https://example.com/foo/bar?q=1#anchor")
+           [[raw-link "https://example.com/foo/bar?q=1#anchor"]])))
+
+  (testing "URL in text"
+    (is (= (inline/parse "Visit https://example.com for info")
+           ["Visit" " " [raw-link "https://example.com"] " " "for" " " "info"])))
+
+  (testing "URL stops at whitespace"
+    (is (= (inline/parse "https://a.com https://b.com")
+           [[raw-link "https://a.com"] " " [raw-link "https://b.com"]])))
+
+  (testing "URL stops at angle brackets"
+    (is (= (inline/parse "https://a.com<2024-01-01>")
+           [[raw-link "https://a.com"] [:timestamp "2024-01-01"]])))
+
+  (testing "non-http word starting with h is not a link"
+    (is (= (inline/parse "hello") ["hello"])))
+
+  (testing "roundtrip preserves raw URL"
+    (let [input "See https://example.com/path for details"
+          tokens (inline/parse input)]
+      (is (= input (w.inline/tokens->string tokens))))))

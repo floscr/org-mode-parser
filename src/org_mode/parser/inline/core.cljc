@@ -174,6 +174,40 @@
               [[tags/macro {:name name :args args}] (+ close-idx 3)])
             [[tags/macro {:name content}] (+ close-idx 3)]))))))
 
+(defn- parse-raw-link
+  "Parse a raw http:// or https:// URL. Returns [token next-idx] or nil.
+   URLs extend until whitespace or certain terminating characters."
+  [^String s ^long idx ^long len]
+  (when (and (< (+ idx 7) len)   ;; minimum: http://x
+             (= (.charAt s idx) \h)
+             (= (.charAt s (inc idx)) \t)
+             (= (.charAt s (+ idx 2)) \t)
+             (= (.charAt s (+ idx 3)) \p))
+    (let [rest-idx (if (and (< (+ idx 8) len)
+                            (= (.charAt s (+ idx 4)) \s)
+                            (= (.charAt s (+ idx 5)) \:)
+                            (= (.charAt s (+ idx 6)) \/)
+                            (= (.charAt s (+ idx 7)) \/))
+                     (+ idx 8)
+                     (when (and (= (.charAt s (+ idx 4)) \:)
+                                (= (.charAt s (+ idx 5)) \/)
+                                (= (.charAt s (+ idx 6)) \/))
+                       (+ idx 7)))]
+      (when (and rest-idx (< rest-idx len))
+        ;; Collect URL characters until whitespace or certain terminators
+        (let [end-idx (loop [i rest-idx]
+                        (if (>= i len)
+                          i
+                          (let [ch (.charAt s i)]
+                            (if (or (= ch \space) (= ch \tab) (= ch \newline)
+                                    (= ch \<) (= ch \>)
+                                    (= ch \[) (= ch \]))
+                              i
+                              (recur (inc i))))))]
+          (when (> end-idx rest-idx)
+            (let [url (subs s idx end-idx)]
+              [[tags/raw-link url] end-idx])))))))
+
 (defn- special-char?
   "Check if character is a special inline markup character."
   [ch]
@@ -231,6 +265,7 @@
                 \< (or (parse-target s idx len)
                        (parse-timestamp s idx len))
                 \{ (parse-macro s idx len)
+                \h (parse-raw-link s idx len)
                 \* (parse-styled s idx \* tags/bold len)
                 \/ (parse-styled s idx \/ tags/italic len)
                 \_ (parse-styled s idx \_ tags/underline len)

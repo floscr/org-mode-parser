@@ -30,6 +30,7 @@
    tags/strike-through (fn [render [_ content]] (element :del (render content)))
    tags/link (fn [_ [_ url]] [:a {:href url} url])
    tags/link-with-title (fn [_ [_ {:keys [link title]}]] [:a {:href link} title])
+   tags/raw-link (fn [_ [_ url]] [:a {:href url} url])
    tags/macro (fn [_ [_ {:keys [name args]}]]
                 [:org/macro {:name name
                              :args args}])

@@ -32,6 +32,8 @@
 
 (def macro :macro)
 
+(def raw-link :raw-link)
+
 (def stats-range-cookie :stats-range-cookie)
 
 (def stats-percent-cookie :stats-percent-cookie)
