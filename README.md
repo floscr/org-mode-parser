@@ -46,8 +46,3 @@ Add to your `deps.edn`:
 **Blocks:** headings, paragraphs, lists, tables, code blocks, drawers, comments, clocks, planning lines, horizontal rules
 
 **Inline:** bold, italic, underline, code, verbatim, strike-through, links, timestamps, footnotes, macros, targets
-
-## Dependencies
-
-- [strojure/parsesso](https://github.com/strojure/parsesso) - parser combinators
-- [funcool/cuerdas](https://github.com/funcool/cuerdas) - string utilities
