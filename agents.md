@@ -39,6 +39,13 @@ src/org_mode/
     heading/blocks.cljc        # Block extraction: properties, planning/schedule, source blocks
     heading/links.cljc         # Link extraction from headings
     document/core.cljc         # Document-level utilities (heading iteration, filtering)
+  actions/
+    heading/core.cljc          # Basic heading mutations: set-level, set-title, set-body
+    heading/todo.cljc          # TODO keyword: set, remove, toggle, cycle
+    heading/tags.cljc          # Tags: set, add, remove, toggle, remove-all
+    heading/planning.cljc      # Planning: set/remove scheduled, deadline, closed
+    heading/properties.cljc    # Properties: set, remove, set-all (auto drawer management)
+    document/core.cljc         # Document mutations: update-heading-at, update-headings, remove-heading-at
 ```
 
 Tests are colocated as `*_test.cljc` alongside source files.
@@ -55,6 +62,11 @@ Tests are colocated as `*_test.cljc` alongside source files.
 3. **Writer** — converts the AST back to output via a pluggable rendering engine:
    - **String writer** for lossless org-mode roundtrip
    - **Hiccup writer** for HTML generation
+
+### Computed & actions layers
+
+- **Computed** (`computed/`) — read-only derived accessors over parsed AST (TODO state, tags, properties, planning, links, search)
+- **Actions** (`actions/`) — pure functions that return modified AST nodes. Heading actions take heading-last for `->` threading. They reuse computed accessors for reads and manipulate `:title`/`:body` token vectors directly.
 
 ### Token format
 
@@ -132,6 +144,44 @@ All parsed elements are `[tag data]` vectors:
 (cd/headings doc)                          ;; => all headers
 (cd/top-level-headings doc)                ;; => level-1 headers only
 (cd/find-headings pred doc)                ;; => filtered headers
+
+;; Actions — modify parsed AST (heading-last arg order for -> threading)
+(require '[org-mode.actions.heading.todo :as at])
+(at/set-todo "TODO" heading)               ;; Set/replace TODO keyword
+(at/remove-todo heading)                   ;; Remove TODO keyword
+(at/toggle-todo heading)                   ;; nil->TODO->DONE->nil
+(at/cycle-todo heading ["TODO" "DOING" "DONE"]) ;; Cycle through list
+
+(require '[org-mode.actions.heading.tags :as ag])
+(ag/set-tags ["a" "b"] heading)            ;; Replace all tags
+(ag/add-tag "new" heading)                 ;; Add (no-op if exists)
+(ag/remove-tag "old" heading)              ;; Remove
+(ag/toggle-tag "flag" heading)             ;; Add/remove
+(ag/remove-all-tags heading)               ;; Strip all tags
+
+(require '[org-mode.actions.heading.planning :as ap])
+(ap/set-scheduled "<2024-02-29 Thu>" heading)
+(ap/remove-scheduled heading)
+(ap/set-deadline "<2024-03-15 Fri>" heading)
+(ap/remove-deadline heading)
+(ap/set-closed "[2024-02-29 Thu]" heading)
+(ap/remove-closed heading)
+
+(require '[org-mode.actions.heading.properties :as pp])
+(pp/set-property "ID" "abc" heading)       ;; Creates drawer if needed
+(pp/remove-property "ID" heading)          ;; Removes drawer if empty
+(pp/set-properties {"A" "1" "B" "2"} heading) ;; Replace all
+
+(require '[org-mode.actions.heading.core :as ah])
+(ah/set-level 2 heading)
+(ah/set-title tokens heading)
+(ah/set-body tokens heading)
+
+(require '[org-mode.actions.document.core :as ad])
+(ad/update-heading-at 0 f doc)             ;; Update heading at index
+(ad/update-headings f doc)                 ;; Update all headings
+(ad/update-body f doc)                     ;; Update document body
+(ad/remove-heading-at 0 doc)               ;; Remove heading
 ```
 
 ## Commands
