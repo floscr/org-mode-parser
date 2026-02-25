@@ -249,7 +249,7 @@
 (defn parse
   "Parse inline content into tokens. Returns a vector of tokens."
   [^String s]
-  (let [len (.length s)]
+  (let [len (count s)]
     (loop [idx 0
            acc (transient [])]
       (if (>= idx len)

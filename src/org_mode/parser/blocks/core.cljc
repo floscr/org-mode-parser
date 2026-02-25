@@ -30,8 +30,8 @@
 (defn- starts-with-ic?
   "Case-insensitive starts-with check."
   [^String s ^String prefix]
-  (let [slen (.length s)
-        plen (.length prefix)]
+  (let [slen (count s)
+        plen (count prefix)]
     (and (>= slen plen)
          (loop [i 0]
            (if (>= i plen)
@@ -45,7 +45,7 @@
 (defn- count-leading-spaces
   "Count leading spaces/tabs."
   [^String s]
-  (let [len (.length s)]
+  (let [len (count s)]
     (loop [i 0]
       (if (>= i len)
         i
@@ -59,7 +59,7 @@
 (defn- parse-comment-line
   "Parse '# comment text'. Returns token or nil."
   [^String line]
-  (when (and (>= (.length line) 2)
+  (when (and (>= (count line) 2)
              (= (.charAt line 0) \#)
              (= (.charAt line 1) \space))
     [tag-comment (inline/parse (subs line 2))]))
@@ -67,7 +67,7 @@
 (defn- parse-keyword-line
   "Parse '#+KEY: value'. Returns token or nil."
   [^String line]
-  (when (and (>= (.length line) 3)
+  (when (and (>= (count line) 3)
              (= (.charAt line 0) \#)
              (= (.charAt line 1) \+)
              (not (starts-with-ic? line "#+BEGIN_"))
@@ -94,7 +94,7 @@
 (defn- parse-drawer-or-property
   "Parse ':NAME:' (drawer) or ':KEY: value' (property). Returns token or nil."
   [^String line]
-  (when (and (pos? (.length line))
+  (when (and (pos? (count line))
              (= (.charAt line 0) \:))
     (let [second-colon (.indexOf line ":" 1)]
       (when (pos? second-colon)
@@ -113,9 +113,9 @@
   "Parse '-----' (5+ dashes). Returns token or nil."
   [^String line]
   (let [trimmed (str/trim line)]
-    (when (and (>= (.length trimmed) 5)
+    (when (and (>= (count trimmed) 5)
                (every? #(= % \-) trimmed))
-      [tag-horizontal-rule (.length trimmed)])))
+      [tag-horizontal-rule (count trimmed)])))
 
 (defn- parse-planning-line
   "Parse 'SCHEDULED:', 'DEADLINE:', 'CLOSED:'. Returns token or nil."
@@ -141,7 +141,7 @@
 (defn- parse-table-line
   "Parse '| cell | cell |' or '|---+---|'. Returns token or nil."
   [^String line]
-  (when (and (pos? (.length line))
+  (when (and (pos? (count line))
              (= (.charAt line 0) \|))
     (let [trimmed (str/trim line)
           ;; Check if it's a separator (contains only |, -, +)
@@ -149,7 +149,7 @@
       (if is-separator?
         ;; Table separator - split on | or + and parse dash sequences
         (let [content (if (str/ends-with? trimmed "|")
-                        (subs trimmed 1 (dec (.length trimmed)))
+                        (subs trimmed 1 (dec (count trimmed)))
                         (subs trimmed 1))
               cells (str/split content #"[|+]" -1)
               columns (mapv (fn [cell]
@@ -158,7 +158,7 @@
           [tag-table-separator columns])
         ;; Table row - preserve cell content including spaces
         (let [content (if (str/ends-with? trimmed "|")
-                        (subs trimmed 1 (dec (.length trimmed)))
+                        (subs trimmed 1 (dec (count trimmed)))
                         (subs trimmed 1))
               cells (str/split content #"\|" -1)
               columns (mapv (fn [cell]
@@ -169,7 +169,7 @@
 (defn- parse-checkbox
   "Parse '[ ]', '[X]', '[x]', '[-]' at position. Returns [state remaining] or nil."
   [^String s ^long idx]
-  (let [len (.length s)]
+  (let [len (count s)]
     (when (and (<= (+ idx 4) len)
                (= (.charAt s idx) \[)
                (= (.charAt s (+ idx 2)) \])
@@ -184,12 +184,12 @@
   [^String line]
   (let [indent (count-leading-spaces line)
         rest-line (subs line indent)]
-    (when (pos? (.length rest-line))
+    (when (pos? (count rest-line))
       (let [first-char (.charAt rest-line 0)]
         (cond
           ;; Unordered: -, +, * followed by space
           (and (or (= first-char \-) (= first-char \+) (= first-char \*))
-               (> (.length rest-line) 1)
+               (> (count rest-line) 1)
                (= (.charAt rest-line 1) \space))
           (let [content-start 2
                 [checkbox content-idx] (or (parse-checkbox rest-line content-start)
@@ -202,7 +202,7 @@
 
           ;; Ordered: digit(s) followed by . or ) and space
           (Character/isDigit first-char)
-          (let [len (.length rest-line)]
+          (let [len (count rest-line)]
             (loop [i 1]
               (if (>= i len)
                 nil
@@ -322,7 +322,7 @@
 (defn parse
   "Parse block content into tokens. Returns a vector of tokens."
   [^String s]
-  (when (and s (pos? (.length s)))
+  (when (and s (pos? (count s)))
     (let [lines (str/split-lines s)]
       (loop [[line & rest-lines] lines
              acc (transient [])]

@@ -24,7 +24,7 @@
   the chunk when a blank line precedes the heading."
   [s]
   (let [^String s (or s "")
-        len (.length s)]
+        len (count s)]
     (loop [start 0
            idx 0
            acc []]

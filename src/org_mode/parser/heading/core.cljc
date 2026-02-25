@@ -10,7 +10,7 @@
   "Returns {:level n :title-str \"...\"} when the line is a valid heading."
   [^String line]
   (when line
-    (let [len (.length line)]
+    (let [len (count line)]
       (loop [idx 0]
         (when (< idx len)
           (let [ch (.charAt line idx)]
@@ -35,7 +35,7 @@
 (defn- ends-with-blank-line?
   "Check if string ends with a blank line (two or more newlines at end)."
   [^String s]
-  (let [len (.length s)]
+  (let [len (count s)]
     (and (>= len 2)
          (= (.charAt s (dec len)) \newline)
          (= (.charAt s (- len 2)) \newline))))
